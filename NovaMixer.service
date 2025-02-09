@@ -1,0 +1,15 @@
+[Unit]
+Description=SteelSeries Arctis Nova Pro Wireless Audio Control
+After=pipewire.service pipewire-pulse.service
+Requires=pipewire.service pipewire-pulse.service
+
+[Service]
+ExecStart=%h/.pyenv/versions/novapro/bin/python %h/.local/bin/nova_mixer.py --log-dir %h/.local/log/
+Restart=on-failure
+RestartSec=5
+Environment=PYTHONUNBUFFERED=1
+Type=simple
+
+[Install]
+WantedBy=default.target
+

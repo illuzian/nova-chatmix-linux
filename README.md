@@ -1,4 +1,28 @@
+
+
 # Arctis Nova Pro Wireless ChatMix on Linux
+
+### Note
+This is a fork of the code located here https://git.dymstro.nl/Dymstro/nova-chatmix-linux which I have modified to include async as well as use the pulsectl library instead of creating subprocesses. Continue beyond [In this document](#in-this-document) to read the original instructions.
+
+### New Instructions
+A quick TL;DR of the new instructions is as follows:
+1. Install [pyenv](https://github.com/pyenv/pyenv) for your standard user.
+2. Install Python 3.11.11 ```pyenv install 3.11.1```
+3. Create a virtualenv for this program ```PYENV_VERSION=3.11.11 pyenv virtualenv novapro```
+4. Install dependencies for this program ```PYENV_VERSION=novapro pyenv exec pip install -r requirements.txt```
+5. Check the vendor ID and product ID match your hardware. My ID was 12e5 where the original author's was 12e0.
+    1. Update 50-nova-pro-wireless.rules with the correct ID
+    2. Update nova.py with the correct ID
+6. Ensure your user is a member of plugdev, if not ```sudo usermod -aG plugdev $USER``` and restart
+7. Create required directories ```mkdir -p ~/.local/log ~/.config/systemd/user ~/.local/bin```
+8. Copy files
+    1. ```sudo cp 50-nova-pro-wireless.rules /etc/udev/rules.d/```
+    1. ```cp nova.py ~/.local/bin/nova_mixer.py```
+    1. ```cp NovaMixer.service ~/.config/systemd/user/```
+9. Reload systemd ```systemctl --user daemon-reload```
+10. Start and enable server ```systemctl --user start NovaMixer```
+
 
 ### In this document
 

@@ -7,30 +7,33 @@ import pulsectl
 from usb.core import find, USBTimeoutError, USBError
 import logging.handlers
 import argparse
+from datetime import time
 
 arg_parser = argparse.ArgumentParser()
 arg_parser.add_argument("--log-dir", type=str, default="./")
 arg_parser.add_argument("--log-level", type=str, default="INFO")
 arg_parser.add_argument("--verbose", type=bool, default=False)
-
+arg_parser.add_argument("--use-syslog", type=bool, default=False)
 
 args = arg_parser.parse_args()
 log_dir = args.log_dir
 log_level = args.log_level
 log_verbose = args.verbose
+use_syslog = args.use_syslog
 
 def setup_logging():
-    """Configure logging for daemon operation."""
+    """Sets up logging to file, syslog, and console."""
     logger = logging.getLogger()
     logger.setLevel(log_level)
-    
-    # Add syslog handler
-    # syslog_handler = logging.handlers.SysLogHandler(address='/dev/log')
-    # syslog_handler.setFormatter(
-    #     logging.Formatter('nova_control[%(process)d]: %(levelname)s %(message)s')
-    # )
-    # logger.addHandler(syslog_handler)
-    
+
+    if use_syslog:
+        # Add syslog handler
+        syslog_handler = logging.handlers.SysLogHandler(address='/dev/log')
+        syslog_handler.setFormatter(
+            logging.Formatter('nova_control[%(process)d]: %(levelname)s %(message)s')
+        )
+        logger.addHandler(syslog_handler)
+
     # Add rotating file handler
     file_handler = logging.handlers.RotatingFileHandler(
         f'{log_dir}nova_control.log',
@@ -53,9 +56,6 @@ def setup_logging():
 
 setup_logging()
 
-
-# Configure logging
-# logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 
 class NovaProWireless:
     """Handles USB communication and PipeWire integration for SteelSeries Arctis Nova Pro Wireless."""
@@ -109,7 +109,9 @@ class NovaProWireless:
         self._shutdown_event = asyncio.Event()
 
     def _create_msgdata(self, data: tuple[int, ...]) -> bytes:
-        """Creates a properly formatted message with zero-padding."""
+        """
+
+        """
         return bytes(data).ljust(self.MSGLEN, b"0")
 
     async def set_chatmix_controls(self, state: bool):
@@ -119,26 +121,6 @@ class NovaProWireless:
     async def set_sonar_icon(self, state: bool):
         """Enable or disable Sonar Icon."""
         self.dev.write(self.ENDPOINT_TX, self._create_msgdata((self.TX, self.OPT_SONAR_ICON, int(state))))
-
-    # async def _create_virtual_sink(self, name: str):
-    #     """Creates a virtual sink using pulsectl."""
-    #     module_args = {
-    #         'sink_name': name,
-    #         'master': self.PW_ORIGINAL_SINK,
-    #         'sink_properties': f'device.description="{name}"'
-    #     }
-    #     return self.pulse.module_load('module-loopback', module_args)
-
-    # async def _create_virtual_sink(self, name: str):
-    #     """Creates a virtual sink using pulsectl."""
-    #     module_args = (
-    #         f'sink_name={name} '
-    #         f'source_dont_move=true '
-    #         f'sink_dont_move=true '
-    #         f'sink_master={self.PW_ORIGINAL_SINK} '
-    #         f'sink_properties=device.description="{name}"'
-    #     )
-    #     return self.pulse.module_load('module-loopback', module_args)
 
 
     async def _create_virtual_sink(self, name: str):
@@ -169,17 +151,6 @@ class NovaProWireless:
                 logging.info(f"Detected sink: {self.PW_ORIGINAL_SINK}")
                 break
 
-    # async def _start_virtual_sinks(self):
-    #     """Creates virtual sinks using pulsectl."""
-    #     await self._detect_original_sink()
-    #     if not self.PW_ORIGINAL_SINK:
-    #         logging.error("Original sink not found, cannot create virtual sinks.")
-    #         return
-
-    #     self.game_module_id = await self._create_virtual_sink(self.PW_GAME_SINK)
-    #     self.chat_module_id = await self._create_virtual_sink(self.PW_CHAT_SINK)
-    #     logging.info("Virtual sinks started.")
-
     async def _start_virtual_sinks(self):
         """Creates virtual sinks using pulsectl."""
         await self._detect_original_sink()
@@ -206,27 +177,7 @@ class NovaProWireless:
             logging.info("Virtual sinks removed.")
         except Exception as e:
             logging.error(f"Error removing virtual sinks: {e}")
-    # async def _remove_virtual_sinks(self):
-    #     """Stops virtual sinks."""
-    #     try:
-    #         if hasattr(self, 'game_module_id'):
-    #             self.pulse.module_unload(self.game_module_id)
-    #         if hasattr(self, 'chat_module_id'):
-    #             self.pulse.module_unload(self.chat_module_id)
-    #         logging.info("Virtual sinks removed.")
-    #     except:
-    #         logging.error("Error removing virtual sinks")
 
-    # async def _set_sink_volume(self, sink_name: str, volume: int):
-    #     """Sets volume for a sink using pulsectl."""
-    #     try:
-    #         volume_value = volume / 100.0  # Convert percentage to float
-    #         for sink in self.pulse.sink_list():
-    #             if sink_name in sink.name:
-    #                 self.pulse.volume_set_all_chans(sink, volume_value)
-    #                 break
-    #     except Exception as e:
-    #         logging.error(f"Error setting volume: {e}")
     async def _set_sink_volume(self, sink_name: str, volume: int):
         """Sets volume for a sink using pulsectl."""
         try:
